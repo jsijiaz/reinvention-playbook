@@ -172,19 +172,16 @@
       outline: 1px solid rgba(233,69,96,0.5);
     }
 
-    /* ── Side hover zones ── */
+    /* ── Side nav buttons ── */
     .nav-zone {
       position: absolute;
-      top: 0; bottom: 0;
-      width: 12%;
-      min-width: 60px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 30;
+      pointer-events: none; /* zone never intercepts clicks — JS controls visibility */
     }
-    #prev-zone { left: 0; justify-content: flex-start; padding-left: 16px; }
-    #next-zone { right: 0; justify-content: flex-end;  padding-right: 16px; }
+    #prev-zone { left: 16px; }
+    #next-zone { right: 16px; }
 
     .nav-btn {
       width: 44px; height: 76px;
@@ -201,14 +198,12 @@
       transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s;
       pointer-events: none;
     }
-    .nav-zone:hover .nav-btn {
+    .nav-btn.visible {
       opacity: 1;
       transform: scale(1);
       pointer-events: all;
     }
     .nav-btn:hover { background: rgba(255,255,255,0.18); }
-    .nav-zone.disabled { pointer-events: none; }
-    .nav-zone.disabled .nav-btn { display: none; }
 
     #top-controls {
       position: absolute;
@@ -556,8 +551,8 @@
 
     pageInput.value = num;
     progressBar.style.width = (num / totalPages * 100) + '%';
-    document.getElementById('prev-zone').classList.toggle('disabled', num <= 1);
-    document.getElementById('next-zone').classList.toggle('disabled', num >= totalPages);
+    prevBtn.classList.remove('visible');
+    nextBtn.classList.remove('visible');
     highlightThumb(num);
 
     rendering = false;
@@ -570,13 +565,6 @@
   async function renderLinks(page, viewport) {
     linkLayer.innerHTML = '';
     const annotations = await page.getAnnotations();
-    // TEMP DEBUG — logs every link annotation on the current page
-    annotations.filter(a => a.subtype === 'Link').forEach(a =>
-      console.log('LINK:', JSON.stringify({
-        dest: a.dest, url: a.url,
-        action: a.action, subtype: a.subtype
-      }))
-    );
     annotations.forEach(ann => {
       if (ann.subtype !== 'Link' || !ann.rect) return;
       const [x1,y1,x2,y2] = viewport.convertToViewportRectangle(ann.rect);
@@ -591,13 +579,11 @@
         a.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            // Resolve named destination string → explicit array
             const arr = Array.isArray(dest)
               ? dest
               : await pdfDoc.getDestination(dest);
             if (!arr || !arr.length) return;
             const ref = arr[0];
-            // ref can be a RefProxy object OR a plain integer (0-based page index)
             const idx = (typeof ref === 'number')
               ? ref
               : await pdfDoc.getPageIndex(ref);
@@ -616,8 +602,23 @@
     renderPage(currentPage, d);
   }
 
-  document.getElementById('prev-zone').addEventListener('click', () => goTo(currentPage - 1, 'back'));
-  document.getElementById('next-zone').addEventListener('click', () => goTo(currentPage + 1, 'fwd'));
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+
+  prevBtn.addEventListener('click', () => goTo(currentPage - 1, 'back'));
+  nextBtn.addEventListener('click', () => goTo(currentPage + 1, 'fwd'));
+
+  // Show nav buttons when mouse is near the edges; never block PDF link clicks
+  const EDGE = 80; // px from edge to trigger
+  document.getElementById('stage').addEventListener('mousemove', e => {
+    const x = e.clientX, w = window.innerWidth;
+    prevBtn.classList.toggle('visible', x < EDGE && currentPage > 1);
+    nextBtn.classList.toggle('visible', x > w - EDGE && currentPage < totalPages);
+  });
+  document.getElementById('stage').addEventListener('mouseleave', () => {
+    prevBtn.classList.remove('visible');
+    nextBtn.classList.remove('visible');
+  });
 
   document.addEventListener('keydown', e => {
     if (!pdfDoc || document.activeElement === pageInput) return;
