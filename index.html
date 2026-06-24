@@ -602,9 +602,6 @@
     renderPage(currentPage, d);
   }
 
-  const prevBtn = document.getElementById('prev-btn');
-  const nextBtn = document.getElementById('next-btn');
-
   prevBtn.addEventListener('click', () => goTo(currentPage - 1, 'back'));
   nextBtn.addEventListener('click', () => goTo(currentPage + 1, 'fwd'));
 
