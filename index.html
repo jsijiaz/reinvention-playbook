@@ -570,6 +570,13 @@
   async function renderLinks(page, viewport) {
     linkLayer.innerHTML = '';
     const annotations = await page.getAnnotations();
+    // TEMP DEBUG — logs every link annotation on the current page
+    annotations.filter(a => a.subtype === 'Link').forEach(a =>
+      console.log('LINK:', JSON.stringify({
+        dest: a.dest, url: a.url,
+        action: a.action, subtype: a.subtype
+      }))
+    );
     annotations.forEach(ann => {
       if (ann.subtype !== 'Link' || !ann.rect) return;
       const [x1,y1,x2,y2] = viewport.convertToViewportRectangle(ann.rect);
