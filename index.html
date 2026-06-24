@@ -171,26 +171,43 @@
       outline: 1px solid rgba(233,69,96,0.5);
     }
 
-    .nav-btn {
+    /* ── Side hover zones ── */
+    .nav-zone {
       position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 48px; height: 80px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
+      top: 0; bottom: 0;
+      width: 12%;
+      min-width: 60px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    #prev-zone { left: 0; justify-content: flex-start; padding-left: 16px; }
+    #next-zone { right: 0; justify-content: flex-end;  padding-right: 16px; }
+
+    .nav-btn {
+      width: 44px; height: 76px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
       border-radius: 10px;
-      color: var(--text);
-      font-size: 22px;
+      color: #fff;
+      font-size: 24px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, opacity 0.15s;
-      z-index: 5;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s;
+      pointer-events: none;
     }
-    .nav-btn:hover { background: rgba(255,255,255,0.14); }
-    .nav-btn:disabled { opacity: 0.15; cursor: default; pointer-events: none; }
-    #prev-btn { left: 16px; }
-    #next-btn { right: 16px; }
+    .nav-zone:hover .nav-btn {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: all;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.18); }
+    .nav-zone.disabled { pointer-events: none; }
+    .nav-zone.disabled .nav-btn { display: none; }
 
     #top-controls {
       position: absolute;
@@ -381,13 +398,17 @@
       </div>
     </div>
 
-    <button class="nav-btn" id="prev-btn">&#8249;</button>
+    <div class="nav-zone" id="prev-zone">
+      <button class="nav-btn" id="prev-btn">&#8249;</button>
+    </div>
     <div id="canvas-container">
       <canvas id="pdf-canvas"></canvas>
       <div id="link-layer"></div>
       <div id="loader"><div class="spinner"></div></div>
     </div>
-    <button class="nav-btn" id="next-btn">&#8250;</button>
+    <div class="nav-zone" id="next-zone">
+      <button class="nav-btn" id="next-btn">&#8250;</button>
+    </div>
 
     <div id="thumb-trigger">
       <svg width="22" height="11" viewBox="0 0 22 11" fill="none">
@@ -505,10 +526,8 @@
   async function computeAutoScale() {
     const page = await pdfDoc.getPage(1);
     const vp = page.getViewport({ scale: 1 });
-    autoScale = Math.min(
-      window.innerWidth  / vp.width,
-      window.innerHeight / vp.height
-    );
+    // Fit to width so left/right edges align exactly with the screen
+    autoScale = window.innerWidth / vp.width;
   }
 
   function updateZoomLabel() {
@@ -545,8 +564,8 @@
 
     pageInput.value = num;
     progressBar.style.width = (num / totalPages * 100) + '%';
-    prevBtn.disabled = num <= 1;
-    nextBtn.disabled = num >= totalPages;
+    document.getElementById('prev-zone').classList.toggle('disabled', num <= 1);
+    document.getElementById('next-zone').classList.toggle('disabled', num >= totalPages);
     highlightThumb(num);
 
     rendering = false;
@@ -591,8 +610,8 @@
     renderPage(currentPage, d);
   }
 
-  prevBtn.addEventListener('click', () => goTo(currentPage - 1, 'back'));
-  nextBtn.addEventListener('click', () => goTo(currentPage + 1, 'fwd'));
+  document.getElementById('prev-zone').addEventListener('click', () => goTo(currentPage - 1, 'back'));
+  document.getElementById('next-zone').addEventListener('click', () => goTo(currentPage + 1, 'fwd'));
 
   document.addEventListener('keydown', e => {
     if (!pdfDoc || document.activeElement === pageInput) return;
