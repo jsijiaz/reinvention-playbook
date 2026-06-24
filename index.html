@@ -522,8 +522,7 @@
   async function computeAutoScale() {
     const page = await pdfDoc.getPage(1);
     const vp = page.getViewport({ scale: 1 });
-    // Fit to height so top/bottom edges align exactly with the screen
-    autoScale = window.innerHeight / vp.height;
+    autoScale = Math.min(window.innerWidth / vp.width, window.innerHeight / vp.height);
   }
 
   function updateZoomLabel() {
