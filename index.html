@@ -584,9 +584,16 @@
         a.addEventListener('click', async e => {
           e.preventDefault();
           try {
-            let idx;
-            if (Array.isArray(dest)) idx = await pdfDoc.getPageIndex(dest[0]);
-            else { const ed = await pdfDoc.getDestination(dest); if (ed) idx = await pdfDoc.getPageIndex(ed[0]); }
+            // Resolve named destination string → explicit array
+            const arr = Array.isArray(dest)
+              ? dest
+              : await pdfDoc.getDestination(dest);
+            if (!arr || !arr.length) return;
+            const ref = arr[0];
+            // ref can be a RefProxy object OR a plain integer (0-based page index)
+            const idx = (typeof ref === 'number')
+              ? ref
+              : await pdfDoc.getPageIndex(ref);
             if (idx != null) goTo(idx + 1);
           } catch(_) {}
         });
