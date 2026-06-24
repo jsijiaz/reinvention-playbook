@@ -351,10 +351,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes flipIn     { from { opacity:0; transform:scale(0.97) translateX(18px);  } to { opacity:1; transform:none; } }
-    @keyframes flipInBack { from { opacity:0; transform:scale(0.97) translateX(-18px); } to { opacity:1; transform:none; } }
-    .anim-fwd  { animation: flipIn     0.2s ease; }
-    .anim-back { animation: flipInBack 0.2s ease; }
   </style>
 </head>
 <body>
@@ -546,21 +542,17 @@
     _lastAutoScale = autoScale;
 
     const page = await pdfDoc.getPage(num);
-    const dpr  = window.devicePixelRatio || 1;
+    const dpr  = Math.max(window.devicePixelRatio || 1, 2); // minimum 2× for crispness
     const vp   = page.getViewport({ scale });
     const vpHD = page.getViewport({ scale: scale * dpr });
     canvas.width  = vpHD.width;
     canvas.height = vpHD.height;
     canvas.style.width  = vp.width  + 'px';
     canvas.style.height = vp.height + 'px';
-    await page.render({ canvasContext: ctx, viewport: vpHD }).promise;
+    await page.render({ canvasContext: ctx, viewport: vpHD, intent: 'print' }).promise;
     renderLinks(page, vp);
 
     loader.style.display = 'none';
-    const cc = document.getElementById('canvas-container');
-    cc.classList.remove('anim-fwd', 'anim-back');
-    void cc.offsetWidth;
-    cc.classList.add(dir === 'fwd' ? 'anim-fwd' : 'anim-back');
 
     pageInput.value = num;
     progressBar.style.width = (num / totalPages * 100) + '%';
